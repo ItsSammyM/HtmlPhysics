@@ -169,16 +169,18 @@ var particles = [];
 var springs = [];
 
 var r = new Rope(300, 50, 1, 1, 1, new Vector2(30,30), 0);
-r.particles[0].velocity = new Vector2(-5, 30);
+r.particles[0].velocity = new Vector2(0, -30);
 r.particles[49].locked = true;
 function MainLoop(){
-	
+	for(var i = 0; i < particles.length; i++){
+		particles[i].AddNetForce(new Vector2(0,1));
+	}
 }
 
 setInterval(function(){
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	timeStep = 0.001;
-
+	MainLoop();
 	for(var t = 0; t < 100; t++){
 		for(var i = 0; i < springs.length; i++){
 			springs[i].Update();
@@ -188,8 +190,6 @@ setInterval(function(){
 			particles[i].position.DrawAsPoint(3);
 		}
 	}
-	
-	MainLoop();
 },1);
 
 
