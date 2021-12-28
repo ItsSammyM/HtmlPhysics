@@ -169,11 +169,11 @@ var particles = [];
 var springs = [];
 
 var r = new Rope(300, 50, 1, 1, 1, new Vector2(30,30), 0);
-r.particles[0].velocity = new Vector2(0, -30);
+r.particles[0].velocity = new Vector2(0, -15);
 r.particles[49].locked = true;
 function MainLoop(){
 	for(var i = 0; i < particles.length; i++){
-		particles[i].AddNetForce(new Vector2(0,1));
+		particles[i].AddNetForce(new Vector2(0,10));
 	}
 }
 
@@ -190,7 +190,7 @@ setInterval(function(){
 			particles[i].position.DrawAsPoint(3);
 		}
 	}
-},1);
+},0.1);
 
 
 
