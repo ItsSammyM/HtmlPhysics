@@ -181,7 +181,7 @@ setInterval(function(){
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	timeStep = 0.001;
 	MainLoop();
-	for(var t = 0; t < 100; t++){
+	for(var t = 0; t < 1000; t++){
 		for(var i = 0; i < springs.length; i++){
 			springs[i].Update();
 		}
@@ -190,7 +190,7 @@ setInterval(function(){
 			particles[i].position.DrawAsPoint(3);
 		}
 	}
-},0.1);
+},1);
 
 
 
