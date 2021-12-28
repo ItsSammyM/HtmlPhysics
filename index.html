@@ -21,178 +21,198 @@
 
 <script>
 
-var canvas = document.getElementById("myCanvas");
-var ctx = canvas.getContext("2d");
-//ctx.moveTo(50, 0);
+	var canvas = document.getElementById("myCanvas");
+	var ctx = canvas.getContext("2d");
+	//ctx.moveTo(50, 0);
 
-function myFunction() { 
-	document.getElementById("demo").innerHTML = "Hello JavaScript!";
-}
-
-class Vector2{
-	constructor(_x=0,_y=0){
-		this.x=_x;
-		this.y=_y;
+	function myFunction() { 
+		document.getElementById("demo").innerHTML = "Hello JavaScript!";
 	}
 
-	DrawAsPoint(size){
-		ctx.strokeRect(this.x, this.y, size, size);
-		//ctx.beginPath();
-		//ctx.arc(this.x, this.y, size, 0, 2 * Math.PI);
-		//ctx.stroke();
-	}
-	DrawAsLine(from, resolution){Vector2.drawLine(from, from.Add(this), resolution);}
-	ToString(){return "(" + this.x + ", " + this.y + ")" ;}
-
-	Add(otherVector){return new Vector2(this.x + otherVector.x, this.y + otherVector.y);}
-	Subtract(otherVector){return new Vector2(this.x - otherVector.x, this.y - otherVector.y);}
-	Multiply(scalar){return new Vector2(this.x * scalar, this.y * scalar);}
-	Divide(scalar){if(scalar == 0){return new Vector2(0,0);}return new Vector2(this.x / scalar, this.y / scalar);}
-	GetMagnitude(){return Math.sqrt((this.x * this.x) + (this.y * this.y));}
-	GetNormalized(){
-		if(this.GetMagnitude()!=0){
-			return this.Divide(this.GetMagnitude());
-		}else{
-			return this;
+	class Vector2{
+		constructor(_x=0,_y=0){
+			this.x=_x;
+			this.y=_y;
 		}
-	}
-	GetAngle(){return Math.atan2(this.y, this.x);}
 
-	Rotate(deltaAngle){return Vector2.createUnitVectorFromAngle(deltaAngle + this.GetAngle()).Multiply(this.GetMagnitude());}
-	RotateEquals(deltaAngle){var vect = Vector2.createUnitVectorFromAngle(deltaAngle + this.GetAngle()).Multiply(this.GetMagnitude());this.x = vect.x; this.y=vect.y;}
-
-	Dot(otherVector){
-		return this.x*otherVector.x+this.y*otherVector.y;
-	}
-	GetDotCastMe(otherVector){
-		//casts this onto other vector with length given by dot product
-		return otherVector.GetNormalized()*this.dot(otherVector);
-	}
-	Zero(){
-		this.x = 0; this.y = 0;
-	}
-	Log(){
-		console.log("V2 x:"+this.x+" y:"+this.y);
-	}
-	static createUnitVectorFromAngle(Angle){return new Vector2(Math.cos(Angle), Math.sin(Angle));}
-	static centerCanvas(){return new Vector2(canvas.width/2, canvas.height/2);}
-	static drawLine(from, to, resolution){
-		var increment = to.Subtract(from).Divide(resolution);
-		for(var i = 1; i < resolution + 1; i++){
-			from.Add(increment.Multiply(i)).DrawAsPoint(1);
+		DrawAsPoint(size){
+			ctx.strokeRect(this.x, this.y, size, size);
+			//ctx.beginPath();
+			//ctx.arc(this.x, this.y, size, 0, 2 * Math.PI);
+			//ctx.stroke();
 		}
-	}
-}
-class Particle{
-	constructor(_position, _mass, _velocity){
-		this.position = _position;
-		this.mass = _mass;
-		this.velocity = _velocity;
-		this.locked = false;
-		this.acceleration = new Vector2(0,0);
-	}
-	SetNetForce(force){
-		if(this.mass != 0){
-			this.acceleration = force.Multiply(1 / this.mass);
-		}
-	}
-	AddNetForce(force){
-		if(this.mass != 0){
-			this.acceleration = this.acceleration.Add(force.Multiply(1 / this.mass));
-		}
-	}
-	
-	Update(timeStep){
-		if(!this.locked){
-			this.position = this.position.Add(this.velocity.Multiply(timeStep)).Add(this.acceleration.Multiply(timeStep*timeStep*(1/2)));
-			this.velocity = this.velocity.Add(this.acceleration.Multiply(timeStep));
-		}else{
-			this.velocity.Zero();
-		}
-		this.acceleration.Zero();
-	}
-}
-class Spring{
-	constructor(_p1, _p2, _k, _length){
-		this.p1 = _p1;
-		this.p2 = _p2;
-		this.k = _k;
-		this.length = _length;
-	}
-	Update(){
-		//p1 to p2
-		var arrow = this.p2.position.Subtract(this.p1.position);
-		//arrow.Log();
-		var distance = arrow.GetMagnitude();
+		DrawAsLine(from, resolution){Vector2.drawLine(from, from.Add(this), resolution);}
+		ToString(){return "(" + this.x + ", " + this.y + ")" ;}
 
-		var deformation = distance - this.length;
-		var force = arrow.GetNormalized().Multiply(deformation);		
-
-		this.p1.AddNetForce(force.Multiply(1 * this.k));
-		this.p2.AddNetForce(force.Multiply(-1 * this.k));
-	}
-}
-
-class Rope{
-	constructor(_length, _resolution, _tention, _k, _mass, _firstPos, _angle){
-		var stepVector = Vector2.createUnitVectorFromAngle(_angle);
-		stepVector = stepVector.Multiply(_length / _resolution);
-		
-		this.particles = [];
-		this.springs = [];
-
-		for(var i = 0; i < _resolution; i++){
-			var myParticle = new Particle(
-				_firstPos.Add(	stepVector.Multiply(i)	),
-				_mass,
-				new Vector2(0,0)
-			);
-
-			this.particles.push(myParticle);
-			particles.push(myParticle);
-			
-			if(i != 0){
-				var mySpring = new Spring(
-					this.particles[i-1], this.particles[i],
-					_k,
-					(_length / _resolution) - _tention
-				);
-				this.springs.push(mySpring);
-				springs.push(mySpring);
+		Add(otherVector){return new Vector2(this.x + otherVector.x, this.y + otherVector.y);}
+		Subtract(otherVector){return new Vector2(this.x - otherVector.x, this.y - otherVector.y);}
+		Multiply(scalar){return new Vector2(this.x * scalar, this.y * scalar);}
+		Divide(scalar){if(scalar == 0){return new Vector2(0,0);}return new Vector2(this.x / scalar, this.y / scalar);}
+		GetMagnitude(){return Math.sqrt((this.x * this.x) + (this.y * this.y));}
+		GetNormalized(){
+			if(this.GetMagnitude()!=0){
+				return this.Divide(this.GetMagnitude());
+			}else{
+				return this;
 			}
 		}
+		GetAngle(){return Math.atan2(this.y, this.x);}
+
+		Rotate(deltaAngle){return Vector2.createUnitVectorFromAngle(deltaAngle + this.GetAngle()).Multiply(this.GetMagnitude());}
+		RotateEquals(deltaAngle){var vect = Vector2.createUnitVectorFromAngle(deltaAngle + this.GetAngle()).Multiply(this.GetMagnitude());this.x = vect.x; this.y=vect.y;}
+
+		Dot(otherVector){
+			return this.x*otherVector.x+this.y*otherVector.y;
+		}
+		GetDotCastMe(otherVector){
+			//casts this onto other vector with length given by dot product
+			return otherVector.GetNormalized()*this.dot(otherVector);
+		}
+		Zero(){
+			this.x = 0; this.y = 0;
+		}
+		Log(){
+			console.log("V2 x:"+this.x+" y:"+this.y);
+		}
+		static createUnitVectorFromAngle(Angle){return new Vector2(Math.cos(Angle), Math.sin(Angle));}
+		static centerCanvas(){return new Vector2(canvas.width/2, canvas.height/2);}
+		static drawLine(from, to, resolution){
+			var increment = to.Subtract(from).Divide(resolution);
+			for(var i = 1; i < resolution + 1; i++){
+				from.Add(increment.Multiply(i)).DrawAsPoint(1);
+			}
+		}
+	}
+
+	class Particle{
+		constructor(_position, _mass, _velocity){
+			this.position = _position;
+			this.mass = _mass;
+			this.velocity = _velocity;
+
+			this.acceleration = new Vector2(0, 0);
+
+			this.locked = false;
+
+			this.collider = null;
+		}
+		SetNetForce(force){
+			if(this.mass != 0){
+				this.acceleration = force.Multiply(1 / this.mass);
+			}
+		}
+		AddNetForce(force){
+			if(this.mass != 0){
+				this.acceleration = this.acceleration.Add(force.Multiply(1 / this.mass));
+			}
+		}
+
+		AttachCollider(_collider) {
+			this.collider = _collider;
+        }
+
+		Update(timeStep){
+			if(!this.locked){
+				this.position = this.position.Add(this.velocity.Multiply(timeStep)).Add(this.acceleration.Multiply(timeStep*timeStep*(1/2)));
+				this.velocity = this.velocity.Add(this.acceleration.Multiply(timeStep));
+			}else{
+				this.velocity.Zero();
+			}
+			this.acceleration.Zero();
+		}
+	}
+
+	class CircleCollider{
+		constructor(_position, _radius)	//center, scalar
+		{
+			this.position = _position;
+			this.radius = _radius;
+		}
+		CheckCollision() {
+			
+        }
+	}
+
+	class Spring{
+		constructor(_p1, _p2, _k, _length){
+			this.p1 = _p1;
+			this.p2 = _p2;
+			this.k = _k;
+			this.length = _length;
+		}
+		Update(){
+			//p1 to p2
+			var arrow = this.p2.position.Subtract(this.p1.position);
+			//arrow.Log();
+			var distance = arrow.GetMagnitude();
+
+			var deformation = distance - this.length;
+			var force = arrow.GetNormalized().Multiply(deformation);		
+
+			this.p1.AddNetForce(force.Multiply(1 * this.k));
+			this.p2.AddNetForce(force.Multiply(-1 * this.k));
+		}
+	}
+
+	class Rope{
+		constructor(_length, _resolution, _tention, _k, _mass, _firstPos, _angle){
+			var stepVector = Vector2.createUnitVectorFromAngle(_angle);
+			stepVector = stepVector.Multiply(_length / _resolution);
 		
+			this.particles = [];
+			this.springs = [];
+
+			for(var i = 0; i < _resolution; i++){
+				var myParticle = new Particle(
+					_firstPos.Add(	stepVector.Multiply(i)	),
+					_mass,
+					new Vector2(0,0)
+				);
+
+				this.particles.push(myParticle);
+				particles.push(myParticle);
+			
+				if(i != 0){
+					var mySpring = new Spring(
+						this.particles[i-1], this.particles[i],
+						_k,
+						(_length / _resolution) - _tention
+					);
+					this.springs.push(mySpring);
+					springs.push(mySpring);
+				}
+			}
+		
+		}
 	}
-}
 
-var particles = [];
-var springs = [];
+	var particles = [];
+	var springs = [];
 
-var r = new Rope(300, 50, 1, 1, 1, new Vector2(30,30), 0);
-r.particles[0].velocity = new Vector2(0, -15);
-r.particles[49].locked = true;
-function MainLoop(){
-	for(var i = 0; i < particles.length; i++){
-		particles[i].AddNetForce(new Vector2(0,20));
+	var r = new Rope(300, 50, 1, 1, 1, new Vector2(70,300), 0);
+	r.particles[0].locked = true;
+	r.particles[49].locked = true;
+	function MainLoop(){
+		for(var i = 0; i < particles.length; i++){
+			particles[i].AddNetForce(new Vector2(0,9.8));
+		}
 	}
-}
-
-setInterval(function(){
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	timeStep = 0.001;
-	MainLoop();
-	for(var t = 0; t < 1000; t++){
-		for(var i = 0; i < springs.length; i++){
-			springs[i].Update();
+	setInterval(function(){
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		timeStep = 0.001;
+		MainLoop();
+		for(var t = 0; t < 1000; t++){
+			for(var i = 0; i < springs.length; i++){
+				springs[i].Update();
+			}
+			for(var i = 0; i < particles.length; i++){
+				particles[i].Update(timeStep);
+			}
 		}
 		for(var i = 0; i < particles.length; i++){
-			particles[i].Update(timeStep);
+			particles[i].position.DrawAsPoint(3);
 		}
-	}
-	for(var i = 0; i < particles.length; i++){
-		particles[i].position.DrawAsPoint(3);
-	}
-},1);
+	},1);
 
 
 
