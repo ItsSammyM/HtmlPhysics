@@ -173,7 +173,7 @@ r.particles[0].velocity = new Vector2(0, -15);
 r.particles[49].locked = true;
 function MainLoop(){
 	for(var i = 0; i < particles.length; i++){
-		particles[i].AddNetForce(new Vector2(0,10));
+		particles[i].AddNetForce(new Vector2(0,20));
 	}
 }
 
@@ -187,8 +187,10 @@ setInterval(function(){
 		}
 		for(var i = 0; i < particles.length; i++){
 			particles[i].Update(timeStep);
-			particles[i].position.DrawAsPoint(3);
 		}
+	}
+	for(var i = 0; i < particles.length; i++){
+		particles[i].position.DrawAsPoint(3);
 	}
 },1);
 
