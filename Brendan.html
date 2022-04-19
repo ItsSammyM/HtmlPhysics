@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <canvas id="Canvas" width="5000" height="3500" style="border:1px solid #000000;"></canvas>
+<script>
+    var oldTime = Date.now();
+    var DeltaTimeMS = 0;
+    var timeStarted = Date.now();
+    var totalTimePassed = 0;
+
+    var canvas = document.getElementById("Canvas");
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000000";
+    //ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    class Vector2{
+        constructor(_x=0, _y=0) {
+            this.x = _x;
+            this.y = _y;
+        }
+        Add(_otherVect) {
+            return new Vector2(this.x + _otherVect.x, this.y + _otherVect.y);
+        }
+        Subtract(_otherVect) {
+            return new Vector2(this.x - _otherVect.x, this.y - _otherVect.y);
+        }
+        Multiply(_scalar) {
+            return new Vector2(this.x * _scalar, this.y * _scalar);
+        }
+        Magnitude() {
+            return Math.sqrt((this.x * this.x) + (this.y * this.y));
+        }
+        Normalize() {
+            return this.Multiply(1 / this.Magnitude());
+        }
+        Angle() {
+            return Math.atan2(this.y, this.x);
+        }
+        static CreateFromUnitCircle(_angle) {
+            return new Vector2(Math.cos(_angle), Math.sin(_angle));
+        }
+        DrawAsPoint(_radius=10){
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, _radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        DrawAsLine(_pos, _resolution = 10) {
+            let part = this.Multiply(1 / _resolution);
+
+            for (let i = 0; i < _resolution; i++) {
+                _pos.Add(part.Multiply(i)).DrawAsPoint(part.Magnitude() * .5);
+            }
+        }
+    }
+    var allParticles = [];
+    class Particle {
+        constructor(_pos=new Vector2(), _mass=1, _vel=new Vector2()) {
+            this.pos = _pos;
+            this.mass = _mass;
+            this.vel = _vel;
+            this.density = .03;
+            this.locked = false;
+            allParticles.push(this);
+        }
+        Force(_forceVect) {
+            this.vel = this.vel.Add(
+                _forceVect.Multiply(1 / this.mass)
+            );
+        }
+        Accelerate(_accel) {
+            this.vel = this.vel.Add(_accel);
+        }
+        Update() {
+            if (!this.locked) {
+                this.pos = this.pos.Add(this.vel.Multiply(1 / 100));
+                this.vel = this.vel.Multiply(0.999);
+            } else {
+                this.vel = new Vector2();
+            }
+        }
+        Show() {
+            this.pos.DrawAsPoint(Math.sqrt(this.mass / Math.PI) * (1/this.density));
+        }
+    }
+    var allSprings = [];
+    class Spring {
+        constructor(_p1, _p2, _k, _length) {
+            this.p1 = _p1;
+            this.p2 = _p2;
+            this.k = _k;
+            this.length = _length;
+            allSprings.push(this);
+        }
+        Update() {
+            let forceVect = this.p1.pos.Subtract(this.p2.pos);
+            let distance = forceVect.Magnitude();
+
+            forceVect = forceVect.Multiply((distance - this.length) * this.k);
+            //console.log(forceVect);
+            this.p1.Force(forceVect.Multiply(-1));
+            this.p2.Force(forceVect.Multiply(1));
+        }
+        Show() {
+            this.p1.pos.Subtract(this.p2.pos).DrawAsLine(this.p2.pos, 50);
+        }
+    }
+    class Rope{
+        constructor(_pos, _length=100, _resolution=10, _pmass=1, _tension = 0, _k=0.01, _angle=0) {
+            this.p = [];
+            this.s = [];
+
+            this.part = new Vector2(Math.cos(_angle), Math.sin(_angle)).Multiply(_length / _resolution);
+            for (let i = 0; i < _resolution; i++) {
+                let p0 = new Particle(_pos.Add(this.part.Multiply(i)), _pmass, new Vector2(0, 0));
+                this.p.push(p0);
+
+                if (i != 0) {
+                    let s0 = new Spring(p0, this.p[i - 1], _k, this.part.Magnitude() - _tension);
+                    this.s.push(s0);
+                }
+            }
+        }
+        SetTension(_tension) {
+            for (let i = 0; i < this.s.length; i++) {
+                this.s[i].length = this.part.Magnitude() - _tension;
+            }
+        }
+        SetK(_k) {
+            for (let i = 0; i < this.s.length; i++) {
+                this.s[i].k = _k;
+            }
+        }
+        SetMass(_mass) {
+            for (let i = 0; i < this.p.length; i++) {
+                this.p[i].mass = _mass;
+            }
+        }
+    }
+    class Grid {
+        constructor(_pos, _width = 100, _height = 100, _resolution = 10, _pmass = 1, _tension = 0, _k = 0.01) {
+            this.p = []; //all particles in 1D list
+            this.resolution = _resolution;
+            this.p2d = []; //all particles in2d list
+
+
+            this.s = [];
+
+            for (let x = 0; x < _resolution; x++) {
+                this.p2d[x] = [];
+                for (let y = 0; y < _resolution; y++) {
+
+                    let p0 = new Particle(
+                        _pos.Add(
+                            new Vector2(x * (_width / _resolution), y * (_height / _resolution))
+                        ),
+                        _pmass,
+                        new Vector2(0, 0)
+                    );
+                    this.p.push(p0);
+                    this.p2d[x][y] = p0;
+
+                    //create springs
+                    if (x != 0) {
+                        let s0 = new Spring(p0, this.p2d[x - 1][y], _k, (_width / _resolution) - _tension);
+                        this.s.push(s0);
+                    }
+                    if (y != 0) {
+                        let s0 = new Spring(p0, this.p2d[x][y - 1], _k, (_height / _resolution) - _tension);
+                        this.s.push(s0);
+                    }
+                    if (x != 0 && y != 0) {
+                        let s0 = new Spring(p0, this.p2d[x-1][y - 1], _k, (_height / _resolution) - _tension);
+                        this.s.push(s0);
+                    }
+                    if (x != 0 && y != this.resolution-1) {
+                        let s0 = new Spring(p0, this.p2d[x - 1][y + 1], _k, (_height / _resolution) - _tension);
+                        this.s.push(s0);
+                    }
+                }
+            }
+        }
+        LockCorners() {
+            this.p2d[0][0].locked = true;
+            this.p2d[this.resolution - 1][0].locked = true;
+            this.p2d[0][this.resolution - 1].locked = true;
+            this.p2d[this.resolution - 1][this.resolution - 1].locked = true;
+        }
+        lockSides() {
+            for (let x = 0; x < this.resolution; x++) {
+                this.p2d[x][0].locked = true;
+                this.p2d[x][this.resolution - 1].locked = true;
+            }
+            for (let y = 0; y < this.resolution; y++) {
+                this.p2d[0][y].locked = true;
+                this.p2d[this.resolution - 1][y].locked = true;
+            }
+        }
+    }
+    setInterval(function () {
+        totalTimePassed = Date.now() - timeStarted;
+        DeltaTimeMS = Date.now() - oldTime;
+        oldTime = Date.now();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (var i = 0; i < allSprings.length; i++) {
+            let spring = allSprings[i];
+            //console.log(i);
+            spring.Update();
+            //spring.Show();
+        }
+        for (var i = 0; i < allParticles.length; i++) {
+            let particle = allParticles[i];
+
+            if (particle.vel.Magnitude() > 10000) {
+                particle.vel = particle.vel.Normalize().Multiply(10000);
+            }
+
+            //console.log(i);
+            particle.Update();
+            particle.Show();
+        }
+        Loop();
+    }, 1);
+    
+
+
+    
+    var grid = new Grid(new Vector2(500, 250), 3000, 3000, 50, 1, 20, 0.01);
+    var maxVel = 0;
+    var debug = false;
+    grid.lockSides();
+    function Loop() {
+
+        avgE = new Vector2();
+        for (let i = 0; i < allParticles.length; i++) {
+            let particle = allParticles[i];
+
+            avgE = avgE.Add(particle.vel);
+
+            particle.density = map(particle.vel.Magnitude(), 10, 3000, 0.02, 0.9, false);
+            particle.vel.Multiply(0.99);
+            //between 0.02 and 0.1
+        }
+        avgE = avgE.Multiply( 1/allParticles.length);
+        if (debug) {
+            console.log(Math.round(avgE.Magnitude() * 10000));
+        }
+        
+
+    }
+    document.addEventListener('keydown', function (event) {
+        if (event.keyCode == 37) {
+            debug = !debug;
+        }
+        else if (event.keyCode == 39) {
+            /*for (let x = 0; x < grid.p2d.length; x++) {
+                for (let y = 0; y < grid.p2d.length; y++) {
+                    grid.p2d[x][y].vel = grid.p2d[x][y].vel.Add( new Vector2(map(Math.random() * 100, 0, 100, -100, 100), map(Math.random() * 100, 0, 100, -100, 100)));
+                }
+            }*/
+            grid.p2d[30][30].vel = grid.p2d[30][30].vel.Add(new Vector2(1000, 1000));
+            //console.log();
+        }
+    });
+
+    function map(val, i1, i2, f1, f2, rangeReq=false){
+        val -= i1;
+        val /= (i2 - i1);
+        val *= (f2 - f1);
+        val += f1;
+        if (rangeReq && (val < min(f1, f2) || val > max(f1, f2))) {
+            val = f1;
+        }
+        return val;
+    }
+    function max(a, b) {
+        if (a > b) {
+            return a;
+        } else { return b;}
+    }
+    function min(a, b) {
+        if (a < b) {
+            return a;
+        } else { return b; }
+    }
+</script>
+</body>
+</html>
